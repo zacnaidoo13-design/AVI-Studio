@@ -1,0 +1,22 @@
+name: AVIStudio
+
+options:
+  bundleIdPrefix: com.avistudio
+  deploymentTarget:
+    iOS: "17.0"
+
+targets:
+  AVIStudio:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.avistudio.editor
+        PRODUCT_NAME: AVI STUDIO
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: AVI STUDIO
+        INFOPLIST_KEY_UIUserInterfaceStyle: Dark
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.0"

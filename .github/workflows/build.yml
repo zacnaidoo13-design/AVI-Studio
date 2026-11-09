@@ -1,0 +1,54 @@
+name: AVI STUDIO - Build & Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Validate AVI STUDIO
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download repository
+        uses: actions/checkout@v4
+
+      - name: Check HTML exists
+        run: |
+          test -f index.html
+          echo "index.html found"
+
+      - name: Validate HTML
+        run: |
+          python - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          class Validator(HTMLParser):
+              pass
+
+          html = Path("index.html").read_text(encoding="utf-8")
+          Validator().feed(html)
+          print("HTML parsed successfully")
+          PY
+
+      - name: Check required app elements
+        run: |
+          grep -q "AVI STUDIO" index.html
+          grep -q "videoPreview" index.html
+          grep -q "importFiles" index.html
+          echo "Required app elements found"
+
+      - name: Build Docker image
+        run: docker build -t avi-studio:test .
+
+      - name: Build successful
+        run: echo "AVI STUDIO passed all checks!"

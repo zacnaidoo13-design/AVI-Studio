@@ -3,116 +3,693 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#090a12">
+<meta name="theme-color" content="#10100f">
 <title>AVI STUDIO</title>
+
 <style>
-*{box-sizing:border-box}
-body{margin:0;background:#090a12;color:#f5f3ff;font-family:Inter,Arial,sans-serif}
-header{height:72px;padding:0 6%;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #242333}
-.logo{font-weight:900;letter-spacing:2px;font-size:21px}
-.logo span{color:#a78bfa}
-button{border:0;border-radius:12px;padding:13px 20px;background:#a78bfa;color:#100c1c;font-weight:800;cursor:pointer}
-main{max-width:1100px;margin:auto;padding:45px 22px}
-.hero{padding:35px;border-radius:24px;background:linear-gradient(120deg,#292044,#171b30,#10302e);margin-bottom:35px}
-.hero h1{font-size:clamp(30px,6vw,52px);line-height:1.05;margin:0 0 12px}
-.hero p{color:#c7c2d8}
-h2{font-size:22px}
-.projects{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
-.card{background:#151724;border:1px solid #292b3b;border-radius:17px;padding:18px;min-height:130px}
-.card small{color:#aaa5bd}
-.empty{text-align:center;padding:45px 15px;color:#aaa5bd}
-#editor{display:none;margin-top:35px}
-.preview{background:#000;border-radius:18px;min-height:240px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-video{max-width:100%;max-height:420px}
-.tools{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
-.tool{background:#1c1d2b;color:#eee;border:1px solid #34344a}
-.timeline{background:#171824;padding:18px;border-radius:15px;margin-top:15px}
-.track{height:45px;background:#29213e;border:1px solid #8066c7;border-radius:9px;margin-top:12px;padding:12px;color:#cbbaff}
-input[type=file]{display:none}
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap');
+
+:root {
+  --bg:#10100f;
+  --panel:#191918;
+  --panel2:#20201e;
+  --line:#30302c;
+  --gold:#d7c39a;
+  --text:#f2eee5;
+  --muted:#929087;
+}
+
+* {box-sizing:border-box;margin:0;padding:0}
+
+body {
+  background:var(--bg);
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  min-height:100vh;
+}
+
+button,input {font:inherit}
+button {cursor:pointer}
+
+.app {min-height:100vh}
+
+header {
+  height:72px;
+  padding:0 5%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid var(--line);
+}
+
+.logo {
+  font-size:19px;
+  letter-spacing:4px;
+  font-weight:700;
+}
+
+.logo span {color:var(--gold)}
+
+.header-right {
+  display:flex;
+  align-items:center;
+  gap:15px;
+}
+
+.status {
+  color:var(--muted);
+  font-size:12px;
+}
+
+.gold-button {
+  background:var(--gold);
+  color:#171613;
+  border:0;
+  border-radius:7px;
+  padding:11px 20px;
+  font-weight:700;
+}
+
+.ghost-button {
+  background:transparent;
+  border:1px solid var(--line);
+  color:var(--text);
+  border-radius:7px;
+  padding:10px 16px;
+}
+
+main {
+  max-width:1450px;
+  margin:auto;
+  padding:35px 5%;
+}
+
+.heading {
+  display:flex;
+  justify-content:space-between;
+  align-items:end;
+  margin-bottom:28px;
+  gap:15px;
+}
+
+.eyebrow {
+  color:var(--gold);
+  font-size:10px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  margin-bottom:10px;
+}
+
+h1 {
+  font-family:'Playfair Display',serif;
+  font-size:35px;
+  font-weight:500;
+}
+
+.subtitle {
+  color:var(--muted);
+  font-size:13px;
+  margin-top:7px;
+}
+
+.workspace {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 290px;
+  gap:20px;
+}
+
+.panel {
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:12px;
+  overflow:hidden;
+}
+
+.panel-heading {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:17px 19px;
+  border-bottom:1px solid var(--line);
+}
+
+.panel-heading h3 {
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:1px;
+}
+
+.small-label {
+  color:var(--muted);
+  font-size:11px;
+}
+
+.preview-area {
+  background:#090909;
+  min-height:360px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  overflow:hidden;
+}
+
+#videoPreview {
+  display:none;
+  max-width:100%;
+  max-height:480px;
+}
+
+#imagePreview {
+  display:none;
+  max-width:100%;
+  max-height:480px;
+  object-fit:contain;
+}
+
+.empty-preview {
+  text-align:center;
+  padding:35px;
+}
+
+.preview-icon {
+  width:58px;
+  height:58px;
+  border:1px solid #454139;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  margin:0 auto 18px;
+  color:var(--gold);
+  font-size:22px;
+}
+
+.empty-preview p {
+  color:var(--muted);
+  font-size:12px;
+  margin-top:8px;
+}
+
+.player-controls {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:18px;
+  padding:15px;
+  border-top:1px solid var(--line);
+}
+
+.control {
+  border:0;
+  background:transparent;
+  color:var(--text);
+  font-size:18px;
+}
+
+.play-button {
+  width:39px;
+  height:39px;
+  border-radius:50%;
+  border:0;
+  background:var(--gold);
+  color:#171613;
+  font-size:16px;
+}
+
+.time {
+  color:var(--muted);
+  font-size:11px;
+  font-variant-numeric:tabular-nums;
+}
+
+.timeline-panel {margin-top:20px}
+
+.timeline-body {padding:18px}
+
+.timeline-top {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:18px;
+}
+
+.timeline-top h3 {
+  font-size:12px;
+  letter-spacing:1px;
+}
+
+.track {
+  min-height:65px;
+  background:#111110;
+  border:1px solid var(--line);
+  border-radius:7px;
+  margin-bottom:10px;
+  padding:8px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.track-name {
+  color:var(--muted);
+  font-size:10px;
+  width:55px;
+  flex-shrink:0;
+}
+
+.clip {
+  background:#353127;
+  border:1px solid #796c50;
+  color:var(--gold);
+  border-radius:5px;
+  padding:12px;
+  font-size:11px;
+  overflow:hidden;
+  min-width:90px;
+  flex:1;
+}
+
+.clip.empty {
+  background:transparent;
+  border:1px dashed #41413b;
+  color:#77766e;
+  text-align:center;
+}
+
+.sidebar {
+  display:flex;
+  flex-direction:column;
+  gap:15px;
+}
+
+.tool-list {
+  padding:10px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+
+.tool {
+  background:var(--panel2);
+  border:1px solid var(--line);
+  border-radius:7px;
+  padding:15px 8px;
+  color:var(--text);
+  text-align:center;
+  font-size:11px;
+}
+
+.tool span {
+  display:block;
+  font-size:19px;
+  margin-bottom:8px;
+  color:var(--gold);
+}
+
+.tool:hover,.ghost-button:hover {
+  border-color:var(--gold);
+}
+
+.media-list {
+  padding:12px;
+  min-height:75px;
+}
+
+.media-empty {
+  color:var(--muted);
+  font-size:11px;
+  text-align:center;
+  padding:18px 5px;
+}
+
+.media-item {
+  padding:10px;
+  border:1px solid var(--line);
+  border-radius:6px;
+  font-size:11px;
+  margin-bottom:7px;
+  overflow-wrap:anywhere;
+}
+
+.settings {
+  padding:16px;
+}
+
+.settings label {
+  display:block;
+  color:var(--muted);
+  font-size:11px;
+  margin:14px 0 7px;
+}
+
+.settings input,.settings select {
+  width:100%;
+  background:#111110;
+  color:var(--text);
+  border:1px solid var(--line);
+  padding:10px;
+  border-radius:6px;
+}
+
+.settings input[type="range"] {padding:0;accent-color:var(--gold)}
+
+footer {
+  text-align:center;
+  color:#69685f;
+  font-size:10px;
+  padding:35px 10px;
+  letter-spacing:1px;
+}
+
+#fileInput {display:none}
+
+@media(max-width:850px) {
+  main {padding:25px 4%}
+  .workspace {grid-template-columns:1fr}
+  .sidebar {display:grid;grid-template-columns:1fr 1fr}
+  .preview-area {min-height:250px}
+  .heading {align-items:start;flex-direction:column}
+}
+
+@media(max-width:520px) {
+  header {padding:0 4%;height:62px}
+  .logo {font-size:16px}
+  .status {display:none}
+  h1 {font-size:29px}
+  .sidebar {grid-template-columns:1fr}
+  .preview-area {min-height:220px}
+  .gold-button {padding:10px 13px;font-size:11px}
+}
 </style>
 </head>
+
 <body>
+<div class="app">
+
 <header>
-<div class="logo">AVI <span>STUDIO</span></div>
-<div>FREE VIDEO EDITOR</div>
+  <div class="logo">AVI <span>STUDIO</span></div>
+  <div class="header-right">
+    <span class="status">CREATIVE WORKSPACE</span>
+    <button class="gold-button" onclick="document.getElementById('fileInput').click()">+ Import media</button>
+  </div>
 </header>
 
 <main>
-<section class="hero">
-<h1>MAKE SOMETHING<br>WORTH WATCHING.</h1>
-<p>Your creativity. Your footage. Your rules.</p>
-<button onclick="document.getElementById('media').click()">＋ Create project</button>
-<input id="media" type="file" accept="video/*,image/*,audio/*" multiple>
-</section>
 
-<h2>Your projects</h2>
-<div class="projects" id="projects">
-<div class="card empty" id="empty">🎬<br><br>No projects yet.<br>Import your first clip to begin.</div>
+<div class="heading">
+  <div>
+    <div class="eyebrow">YOUR CREATIVE SPACE</div>
+    <h1>Make something beautiful.</h1>
+    <p class="subtitle">A cleaner way to bring your ideas to life.</p>
+  </div>
+  <button class="ghost-button" onclick="newProject()">New project ↗</button>
 </div>
 
-<section id="editor">
-<h2>Editing workspace</h2>
-<div class="preview" id="preview">Your preview will appear here</div>
-<div class="tools">
-<button class="tool" onclick="alert('Trim tools coming next!')">✂ Trim</button>
-<button class="tool" onclick="alert('Split tools coming next!')">Split</button>
-<button class="tool" onclick="alert('Text tools coming next!')">Text</button>
-<button class="tool" onclick="alert('Audio tools coming next!')">Audio</button>
-<button class="tool" onclick="alert('Effects coming next!')">Effects</button>
-<button class="tool" onclick="alert('Export is coming next!')">Export</button>
+<input id="fileInput" type="file" accept="video/*,image/*,audio/*" multiple onchange="importFiles(event)">
+
+<div class="workspace">
+
+<section>
+
+<div class="panel">
+  <div class="panel-heading">
+    <h3>PREVIEW</h3>
+    <span class="small-label" id="previewStatus">NO MEDIA SELECTED</span>
+  </div>
+
+  <div class="preview-area">
+    <div class="empty-preview" id="emptyPreview">
+      <div class="preview-icon">✦</div>
+      <strong>Your canvas awaits.</strong>
+      <p>Import a video or image to get started.</p>
+    </div>
+    <video id="videoPreview" playsinline controls></video>
+    <img id="imagePreview" alt="Media preview">
+  </div>
+
+  <div class="player-controls">
+    <span class="time" id="currentTime">00:00</span>
+    <button class="control" onclick="restartVideo()">↺</button>
+    <button class="play-button" id="playButton" onclick="togglePlayback()">▶</button>
+    <button class="control" onclick="stopVideo()">■</button>
+    <span class="time" id="duration">00:00</span>
+  </div>
 </div>
-<div class="timeline">
-<strong>TIMELINE</strong>
-<div class="track" id="track">Your media clip will appear here</div>
+
+<div class="panel timeline-panel">
+  <div class="panel-heading">
+    <h3>TIMELINE</h3>
+    <span class="small-label">YOUR PROJECT</span>
+  </div>
+
+  <div class="timeline-body">
+    <div class="timeline-top">
+      <h3>TRACKS</h3>
+      <button class="ghost-button" onclick="document.getElementById('fileInput').click()">＋ Add media</button>
+    </div>
+
+    <div class="track">
+      <span class="track-name">VIDEO</span>
+      <div class="clip empty" id="videoClip">Drop video here</div>
+    </div>
+
+    <div class="track">
+      <span class="track-name">AUDIO</span>
+      <div class="clip empty" id="audioClip">Add audio track</div>
+    </div>
+
+    <div class="track">
+      <span class="track-name">TEXT</span>
+      <div class="clip empty" id="textClip">Add text layer</div>
+    </div>
+  </div>
 </div>
+
 </section>
+
+<aside class="sidebar">
+
+<div class="panel">
+  <div class="panel-heading">
+    <h3>EDITING TOOLS</h3>
+  </div>
+  <div class="tool-list">
+    <button class="tool" onclick="toolMessage('Trim')"><span>⌁</span>Trim</button>
+    <button class="tool" onclick="splitClip()"><span>✂</span>Split</button>
+    <button class="tool" onclick="toolMessage('Crop')"><span>▣</span>Crop</button>
+    <button class="tool" onclick="addText()"><span>T</span>Text</button>
+    <button class="tool" onclick="toolMessage('Transitions')"><span>◈</span>Transitions</button>
+    <button class="tool" onclick="toolMessage('Effects')"><span>✧</span>Effects</button>
+    <button class="tool" onclick="toolMessage('Colour')"><span>◐</span>Colour</button>
+    <button class="tool" onclick="toolMessage('Speed')"><span>»</span>Speed</button>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-heading">
+    <h3>MEDIA LIBRARY</h3>
+    <button class="control" onclick="document.getElementById('fileInput').click()">＋</button>
+  </div>
+  <div class="media-list" id="mediaList">
+    <div class="media-empty">Your imported files will appear here.</div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-heading">
+    <h3>PROJECT SETTINGS</h3>
+  </div>
+  <div class="settings">
+    <label>Resolution</label>
+    <select id="resolution">
+      <option>1080p</option>
+      <option>720p</option>
+      <option>1440p</option>
+      <option>4K</option>
+    </select>
+
+    <label>Frame rate</label>
+    <select id="fps">
+      <option>30 FPS</option>
+      <option>24 FPS</option>
+      <option>60 FPS</option>
+    </select>
+
+    <label>Aspect ratio</label>
+    <select id="ratio">
+      <option>16:9</option>
+      <option>9:16</option>
+      <option>1:1</option>
+      <option>4:5</option>
+    </select>
+  </div>
+</div>
+
+</aside>
+</div>
 </main>
 
+<footer>AVI STUDIO · YOUR VISION, YOUR CREATION</footer>
+</div>
+
 <script>
-const picker=document.getElementById('media');
-const projects=document.getElementById('projects');
-const editor=document.getElementById('editor');
-const preview=document.getElementById('preview');
-const track=document.getElementById('track');
-let currentUrl=null;
+const video = document.getElementById('videoPreview');
+const image = document.getElementById('imagePreview');
+const empty = document.getElementById('emptyPreview');
 
-picker.addEventListener('change',()=>{
-const files=Array.from(picker.files);
-if(!files.length)return;
-document.getElementById('empty')?.remove();
+let files = [];
+let activeVideo = null;
 
-files.forEach(file=>{
-const card=document.createElement('div');
-card.className='card';
-card.innerHTML='<strong></strong><br><small></small>';
-card.querySelector('strong').textContent=file.name;
-card.querySelector('small').textContent=(file.size/1048576).toFixed(1)+' MB';
-card.onclick=()=>openEditor(file);
-projects.prepend(card);
-});
-openEditor(files[0]);
-});
-
-function openEditor(file){
-editor.style.display='block';
-track.textContent=file.name;
-if(currentUrl)URL.revokeObjectURL(currentUrl);
-currentUrl=URL.createObjectURL(file);
-if(file.type.startsWith('video/')){
-const video=document.createElement('video');
-video.src=currentUrl;
-video.controls=true;
-preview.replaceChildren(video);
-}else if(file.type.startsWith('image/')){
-const img=document.createElement('img');
-img.src=currentUrl;
-img.style.maxWidth='100%';
-img.style.maxHeight='420px';
-preview.replaceChildren(img);
-}else{
-preview.textContent='Audio imported: '+file.name;
+function formatTime(seconds) {
+  if (!Number.isFinite(seconds)) return '00:00';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return String(mins).padStart(2,'0') + ':' + String(secs).padStart(2,'0');
 }
-editor.scrollIntoView({behavior:'smooth'});
+
+function importFiles(event) {
+  const selected = Array.from(event.target.files || []);
+
+  selected.forEach(file => {
+    const url = URL.createObjectURL(file);
+    const item = {file,url};
+    files.push(item);
+
+    const mediaList = document.getElementById('mediaList');
+    if (mediaList.querySelector('.media-empty')) mediaList.innerHTML = '';
+
+    const entry = document.createElement('div');
+    entry.className = 'media-item';
+    entry.textContent = file.name;
+    entry.onclick = () => selectMedia(item);
+    mediaList.appendChild(entry);
+
+    if (file.type.startsWith('video/')) {
+      document.getElementById('videoClip').textContent = file.name;
+      document.getElementById('videoClip').classList.remove('empty');
+      if (!activeVideo) selectMedia(item);
+    }
+
+    if (file.type.startsWith('audio/')) {
+      document.getElementById('audioClip').textContent = file.name;
+      document.getElementById('audioClip').classList.remove('empty');
+    }
+  });
+
+  event.target.value = '';
+}
+
+function selectMedia(item) {
+  const file = item.file;
+  empty.style.display = 'none';
+  image.style.display = 'none';
+  video.style.display = 'none';
+
+  if (file.type.startsWith('video/')) {
+    activeVideo = item;
+    video.src = item.url;
+    video.style.display = 'block';
+    video.load();
+    document.getElementById('previewStatus').textContent = 'VIDEO PREVIEW';
+  } else if (file.type.startsWith('image/')) {
+    image.src = item.url;
+    image.style.display = 'block';
+    document.getElementById('previewStatus').textContent = 'IMAGE PREVIEW';
+  } else if (file.type.startsWith('audio/')) {
+    document.getElementById('previewStatus').textContent = 'AUDIO IMPORTED';
+    alert('Audio imported successfully. Audio preview and timeline editing are coming in a later stage.');
+  }
+}
+
+function togglePlayback() {
+  if (!video.src) {
+    alert('Import a video first.');
+    return;
+  }
+
+  if (video.paused) {
+    video.play();
+    document.getElementById('playButton').textContent = 'Ⅱ';
+  } else {
+    video.pause();
+    document.getElementById('playButton').textContent = '▶';
+  }
+}
+
+function restartVideo() {
+  if (!video.src) return;
+  video.currentTime = 0;
+  video.play();
+  document.getElementById('playButton').textContent = 'Ⅱ';
+}
+
+function stopVideo() {
+  video.pause();
+  video.currentTime = 0;
+  document.getElementById('playButton').textContent = '▶';
+}
+
+video.addEventListener('timeupdate', () => {
+  document.getElementById('currentTime').textContent = formatTime(video.currentTime);
+});
+
+video.addEventListener('loadedmetadata', () => {
+  document.getElementById('duration').textContent = formatTime(video.duration);
+});
+
+video.addEventListener('ended', () => {
+  document.getElementById('playButton').textContent = '▶';
+});
+
+function addText() {
+  const text = prompt('Enter your text layer:');
+  if (!text) return;
+
+  const clip = document.getElementById('textClip');
+  clip.textContent = text;
+  clip.classList.remove('empty');
+  alert('Text layer added to the project timeline.');
+}
+
+function splitClip() {
+  if (!video.src) {
+    alert('Import a video before splitting.');
+    return;
+  }
+  alert('Split editing is planned for the next editing-engine update.');
+}
+
+function toolMessage(name) {
+  alert(name + ' editing is planned for the next AVI STUDIO development stage.');
+}
+
+function newProject() {
+  if (!confirm('Start a new project? Your current imported media will be cleared from this workspace.')) return;
+
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+  image.removeAttribute('src');
+
+  files.forEach(item => URL.revokeObjectURL(item.url));
+  files = [];
+  activeVideo = null;
+
+  empty.style.display = 'block';
+  video.style.display = 'none';
+  image.style.display = 'none';
+
+  document.getElementById('mediaList').innerHTML = '<div class="media-empty">Your imported files will appear here.</div>';
+  document.getElementById('videoClip').textContent = 'Drop video here';
+  document.getElementById('audioClip').textContent = 'Add audio track';
+  document.getElementById('textClip').textContent = 'Add text layer';
+
+  ['videoClip','audioClip','textClip'].forEach(id => document.getElementById(id).classList.add('empty'));
+
+  document.getElementById('previewStatus').textContent = 'NO MEDIA SELECTED';
+  document.getElementById('currentTime').textContent = '00:00';
+  document.getElementById('duration').textContent = '00:00';
+  document.getElementById('playButton').textContent = '▶';
 }
 </script>
 </body>

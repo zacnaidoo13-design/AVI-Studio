@@ -1,11 +1,39 @@
-
 import SwiftUI
 import AVKit
 import AVFoundation
 import UniformTypeIdentifiers
+import PhotosUI
+import CoreTransferable
+
+// MARK: - Imported Camera Roll Video
+
+struct ImportedMovie: Transferable {
+    let url: URL
+
+    static var transferRepresentation: some TransferRepresentation {
+        FileRepresentation(importedContentType: .movie) { received in
+            let ext = received.file.pathExtension.isEmpty
+                ? "mov"
+                : received.file.pathExtension
+
+            let destination = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString)
+                .appendingPathExtension(ext)
+
+            try FileManager.default.copyItem(
+                at: received.file,
+                to: destination
+            )
+
+            return ImportedMovie(url: destination)
+        }
+    }
+}
+
+// MARK: - Clip Model
 
 struct EditorClip: Identifiable {
-    let id = UUID()
+    var id = UUID()
     let url: URL
     let name: String
     let sourceDuration: Double
@@ -17,66 +45,124 @@ struct EditorClip: Identifiable {
     }
 }
 
+// MARK: - Main Editor
+
 struct ContentView: View {
+
     @State private var clips: [EditorClip] = []
     @State private var selectedClipID: UUID?
     @State private var player: AVPlayer?
 
     @State private var showingImporter = false
+    @State private var selectedPhotoItems: [PhotosPickerItem] = []
+
     @State private var isExporting = false
     @State private var exportedURL: URL?
 
     @State private var alertMessage = ""
     @State private var showingAlert = false
 
-    private let gold = Color(red: 0.84, green: 0.76, blue: 0.60)
-    private let background = Color(red: 0.045, green: 0.045, blue: 0.045)
-    private let panel = Color(red: 0.105, green: 0.105, blue: 0.105)
+    // MARK: - Design
+
+    private let silver = Color(
+        red: 0.78,
+        green: 0.81,
+        blue: 0.86
+    )
+
+    private let background = Color(
+        red: 0.025,
+        green: 0.03,
+        blue: 0.04
+    )
+
+    private let panel = Color(
+        red: 0.075,
+        green: 0.085,
+        blue: 0.10
+    )
+
+    private let secondaryPanel = Color(
+        red: 0.11,
+        green: 0.12,
+        blue: 0.14
+    )
+
+    // MARK: - Computed Properties
 
     private var selectedIndex: Int? {
         clips.firstIndex { $0.id == selectedClipID }
     }
 
     private var selectedClip: EditorClip? {
-        guard let index = selectedIndex else { return nil }
+        guard let index = selectedIndex else {
+            return nil
+        }
+
         return clips[index]
     }
 
     private var totalDuration: Double {
-        clips.reduce(0) { $0 + $1.duration }
+        clips.reduce(0) {
+            $0 + $1.duration
+        }
     }
+
+    // MARK: - Body
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+            ZStack {
+                background
+                    .ignoresSafeArea()
 
-                    header
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 22) {
+                        header
 
-                    preview
+                        preview
 
-                    importButton
+                        importButton
 
-                    timeline
+                        timeline
 
-                    editingControls
+                        editingControls
 
-                    exportButton
+                        exportButton
+
+                        footer
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.top, 18)
+                    .padding(.bottom, 35)
+                    .frame(maxWidth: .infinity)
                 }
-                .padding(16)
+                .scrollIndicators(.hidden)
+                .frame(
+                    maxWidth: .infinity,
+                    maxHeight: .infinity,
+                    alignment: .top
+                )
             }
-            .background(background.ignoresSafeArea())
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text("AVI  STUDIO")
+                    Text("AVI STUDIO")
                         .font(.system(size: 15, weight: .bold))
-                        .tracking(3)
-                        .foregroundStyle(gold)
+                        .tracking(4)
+                        .foregroundStyle(silver)
                 }
             }
+            .toolbarBackground(background, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+
+            // Files importer
             .fileImporter(
                 isPresented: $showingImporter,
-                allowedContentTypes: [.movie, .mpeg4Movie, .quickTimeMovie],
+                allowedContentTypes: [
+                    .movie,
+                    .mpeg4Movie,
+                    .quickTimeMovie
+                ],
                 allowsMultipleSelection: true
             ) { result in
                 switch result {
@@ -89,25 +175,46 @@ struct ContentView: View {
                     showError(error.localizedDescription)
                 }
             }
-            .alert("AVI STUDIO", isPresented: $showingAlert) {
-                Button("OK", role: .cancel) { }
+
+            // Camera Roll importer
+            .onChange(of: selectedPhotoItems) { _, items in
+                guard !items.isEmpty else {
+                    return
+                }
+
+                Task {
+                    await importFromPhotos(items)
+                    selectedPhotoItems = []
+                }
+            }
+
+            .alert(
+                "AVI STUDIO",
+                isPresented: $showingAlert
+            ) {
+                Button("OK", role: .cancel) {}
             } message: {
                 Text(alertMessage)
             }
         }
-        .tint(gold)
+        .tint(silver)
+        .preferredColorScheme(.dark)
     }
 
+    // MARK: - Header
+
     private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("YOUR CREATIVE SPACE")
+        VStack(alignment: .leading, spacing: 9) {
+            Text("THE CREATIVE STUDIO")
                 .font(.system(size: 10, weight: .bold))
                 .tracking(3)
-                .foregroundStyle(gold)
+                .foregroundStyle(silver.opacity(0.75))
 
-            Text("Make something\nbeautiful.")
-                .font(.system(size: 34, design: .serif))
+            Text("Create without\nlimits.")
+                .font(.system(size: 37, weight: .semibold))
+                .tracking(-1.5)
                 .foregroundStyle(.white)
+                .fixedSize(horizontal: false, vertical: true)
 
             HStack {
                 Text("Your ideas. Your creation.")
@@ -116,12 +223,16 @@ struct ContentView: View {
                 Spacer()
 
                 Text(timeString(totalDuration))
-                    .foregroundStyle(gold)
+                    .foregroundStyle(silver)
                     .monospacedDigit()
             }
             .font(.system(size: 12))
+            .padding(.top, 3)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
+
+    // MARK: - Preview
 
     private var preview: some View {
         VStack(spacing: 0) {
@@ -131,11 +242,15 @@ struct ContentView: View {
 
                 Spacer()
 
+                Circle()
+                    .fill(silver)
+                    .frame(width: 6, height: 6)
+
                 Text("AVI STUDIO")
-                    .foregroundStyle(gold)
+                    .foregroundStyle(silver)
             }
             .font(.system(size: 10, weight: .semibold))
-            .padding(13)
+            .padding(14)
 
             ZStack {
                 Color.black
@@ -143,12 +258,13 @@ struct ContentView: View {
                 if let player {
                     VideoPlayer(player: player)
                 } else {
-                    VStack(spacing: 12) {
+                    VStack(spacing: 13) {
                         Image(systemName: "play.rectangle")
-                            .font(.system(size: 35))
-                            .foregroundStyle(gold)
+                            .font(.system(size: 38, weight: .light))
+                            .foregroundStyle(silver)
 
                         Text("Your canvas awaits")
+                            .font(.system(size: 15, weight: .medium))
                             .foregroundStyle(.white)
 
                         Text("Import a video to begin editing.")
@@ -157,7 +273,8 @@ struct ContentView: View {
                     }
                 }
             }
-            .frame(height: 230)
+            .frame(maxWidth: .infinity)
+            .frame(height: 240)
             .clipped()
 
             HStack {
@@ -199,29 +316,67 @@ struct ContentView: View {
                     Image(systemName: "arrow.counterclockwise")
                 }
             }
-            .foregroundStyle(gold)
-            .padding(15)
+            .foregroundStyle(silver)
+            .padding(16)
         }
         .background(panel)
-        .clipShape(RoundedRectangle(cornerRadius: 13))
-    }
-
-    private var importButton: some View {
-        Button {
-            showingImporter = true
-        } label: {
-            Label("Import videos", systemImage: "plus")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(.black)
-                .frame(maxWidth: .infinity)
-                .padding(15)
-                .background(gold)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+        .clipShape(RoundedRectangle(cornerRadius: 15))
+        .overlay {
+            RoundedRectangle(cornerRadius: 15)
+                .stroke(Color.white.opacity(0.07), lineWidth: 1)
         }
     }
 
+    // MARK: - Import Buttons
+
+    private var importButton: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("ADD YOUR MEDIA")
+                .font(.system(size: 10, weight: .bold))
+                .tracking(2)
+                .foregroundStyle(.gray)
+
+            HStack(spacing: 10) {
+                PhotosPicker(
+                    selection: $selectedPhotoItems,
+                    maxSelectionCount: 20,
+                    matching: .videos,
+                    photoLibrary: .shared()
+                ) {
+                    Label(
+                        "Camera Roll",
+                        systemImage: "photo.on.rectangle.angled"
+                    )
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.black)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(silver)
+                    .clipShape(RoundedRectangle(cornerRadius: 11))
+                }
+
+                Button {
+                    showingImporter = true
+                } label: {
+                    Label(
+                        "Files",
+                        systemImage: "folder"
+                    )
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(silver)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(secondaryPanel)
+                    .clipShape(RoundedRectangle(cornerRadius: 11))
+                }
+            }
+        }
+    }
+
+    // MARK: - Timeline
+
     private var timeline: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 15) {
             HStack {
                 Text("TIMELINE")
                     .font(.system(size: 11, weight: .bold))
@@ -235,16 +390,26 @@ struct ContentView: View {
             }
 
             if clips.isEmpty {
-                Text("Your timeline is empty.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.gray)
-                    .frame(maxWidth: .infinity)
-                    .padding(25)
-                    .background(Color.white.opacity(0.035))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                VStack(spacing: 10) {
+                    Image(systemName: "film.stack")
+                        .font(.system(size: 25))
+                        .foregroundStyle(silver.opacity(0.7))
+
+                    Text("Your timeline is empty")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white)
+
+                    Text("Import media to start your project.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.gray)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 30)
+                .background(secondaryPanel.opacity(0.5))
+                .clipShape(RoundedRectangle(cornerRadius: 11))
             } else {
                 ScrollView(.horizontal) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 9) {
                         ForEach(clips) { clip in
                             Button {
                                 selectClip(clip)
@@ -252,7 +417,7 @@ struct ContentView: View {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Image(systemName: "film")
                                         .font(.system(size: 20))
-                                        .foregroundStyle(gold)
+                                        .foregroundStyle(silver)
 
                                     Text(clip.name)
                                         .font(.system(size: 10, weight: .medium))
@@ -263,23 +428,27 @@ struct ContentView: View {
                                         .font(.system(size: 9))
                                         .foregroundStyle(.gray)
                                 }
-                                .padding(10)
-                                .frame(width: 115, height: 82, alignment: .leading)
+                                .padding(11)
+                                .frame(
+                                    width: 120,
+                                    height: 88,
+                                    alignment: .leading
+                                )
                                 .background(
                                     selectedClipID == clip.id
-                                    ? gold.opacity(0.18)
-                                    : Color.white.opacity(0.045)
+                                    ? silver.opacity(0.15)
+                                    : secondaryPanel
                                 )
                                 .overlay {
-                                    RoundedRectangle(cornerRadius: 9)
+                                    RoundedRectangle(cornerRadius: 10)
                                         .stroke(
                                             selectedClipID == clip.id
-                                            ? gold
-                                            : Color.clear,
-                                            lineWidth: 1.5
+                                            ? silver
+                                            : Color.white.opacity(0.04),
+                                            lineWidth: 1
                                         )
                                 }
-                                .clipShape(RoundedRectangle(cornerRadius: 9))
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
                             }
                         }
                     }
@@ -287,37 +456,53 @@ struct ContentView: View {
                 .scrollIndicators(.hidden)
             }
 
+            Divider()
+                .overlay(Color.white.opacity(0.08))
+
             HStack {
-                Label("VIDEO", systemImage: "film")
+                Label("VIDEO TRACK", systemImage: "film")
                 Spacer()
                 Text(timeString(totalDuration))
+                    .monospacedDigit()
             }
-            .font(.system(size: 10))
-            .foregroundStyle(gold)
+            .font(.system(size: 10, weight: .medium))
+            .foregroundStyle(silver)
         }
-        .padding(14)
+        .padding(15)
         .background(panel)
-        .clipShape(RoundedRectangle(cornerRadius: 13))
+        .clipShape(RoundedRectangle(cornerRadius: 15))
+        .overlay {
+            RoundedRectangle(cornerRadius: 15)
+                .stroke(Color.white.opacity(0.07), lineWidth: 1)
+        }
     }
 
+    // MARK: - Editing Controls
+
     private var editingControls: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 17) {
             Text("EDITING TOOLS")
                 .font(.system(size: 11, weight: .bold))
                 .tracking(2)
 
             if let clip = selectedClip {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(clip.name)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(gold)
-                        .lineLimit(1)
+                VStack(alignment: .leading, spacing: 15) {
+                    HStack {
+                        Image(systemName: "film")
+                            .foregroundStyle(silver)
 
-                    VStack(alignment: .leading, spacing: 5) {
+                        Text(clip.name)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                    }
+
+                    VStack(alignment: .leading, spacing: 7) {
                         HStack {
                             Text("TRIM START")
                             Spacer()
                             Text(timeString(clip.sourceStart))
+                                .monospacedDigit()
                         }
                         .font(.system(size: 10))
                         .foregroundStyle(.gray)
@@ -338,13 +523,15 @@ struct ContentView: View {
                             ),
                             in: 0...max(clip.sourceDuration, 0.1)
                         )
+                        .tint(silver)
                     }
 
-                    VStack(alignment: .leading, spacing: 5) {
+                    VStack(alignment: .leading, spacing: 7) {
                         HStack {
                             Text("TRIM END")
                             Spacer()
                             Text(timeString(clip.sourceEnd))
+                                .monospacedDigit()
                         }
                         .font(.system(size: 10))
                         .foregroundStyle(.gray)
@@ -365,11 +552,12 @@ struct ContentView: View {
                             ),
                             in: 0...max(clip.sourceDuration, 0.1)
                         )
+                        .tint(silver)
                     }
                 }
 
                 Divider()
-                    .overlay(Color.white.opacity(0.1))
+                    .overlay(Color.white.opacity(0.08))
 
                 HStack(spacing: 10) {
                     toolButton("Split", icon: "scissors") {
@@ -392,24 +580,42 @@ struct ContentView: View {
                 }
 
             } else {
-                Text("Select a clip to access editing tools.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.gray)
+                VStack(spacing: 9) {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 23))
+                        .foregroundStyle(silver.opacity(0.7))
+
+                    Text("Select a clip to edit")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white)
+
+                    Text("Your editing controls will appear here.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.gray)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
             }
         }
         .padding(15)
         .background(panel)
-        .clipShape(RoundedRectangle(cornerRadius: 13))
+        .clipShape(RoundedRectangle(cornerRadius: 15))
+        .overlay {
+            RoundedRectangle(cornerRadius: 15)
+                .stroke(Color.white.opacity(0.07), lineWidth: 1)
+        }
     }
 
+    // MARK: - Export
+
     private var exportButton: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 13) {
             Button {
                 Task {
                     await exportProject()
                 }
             } label: {
-                HStack {
+                HStack(spacing: 9) {
                     if isExporting {
                         ProgressView()
                             .tint(.black)
@@ -420,23 +626,46 @@ struct ContentView: View {
                     Text(isExporting ? "EXPORTING..." : "EXPORT VIDEO")
                 }
                 .font(.system(size: 13, weight: .bold))
+                .tracking(1)
                 .foregroundStyle(.black)
                 .frame(maxWidth: .infinity)
-                .padding(16)
-                .background(gold)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .padding(17)
+                .background(silver)
+                .clipShape(RoundedRectangle(cornerRadius: 11))
             }
             .disabled(clips.isEmpty || isExporting)
+            .opacity(clips.isEmpty ? 0.45 : 1)
 
             if let exportedURL {
                 ShareLink(item: exportedURL) {
-                    Label("Save or share exported video", systemImage: "square.and.arrow.up")
-                        .font(.system(size: 12))
-                        .foregroundStyle(gold)
+                    Label(
+                        "Save or share exported video",
+                        systemImage: "square.and.arrow.up"
+                    )
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(silver)
                 }
             }
         }
     }
+
+    // MARK: - Footer
+
+    private var footer: some View {
+        HStack {
+            Text("AVI STUDIO")
+
+            Spacer()
+
+            Text("CREATIVITY WITHOUT LIMITS")
+        }
+        .font(.system(size: 8, weight: .semibold))
+        .tracking(2)
+        .foregroundStyle(.gray.opacity(0.6))
+        .padding(.top, 5)
+    }
+
+    // MARK: - Tool Button
 
     private func toolButton(
         _ title: String,
@@ -449,17 +678,42 @@ struct ContentView: View {
                     .font(.system(size: 17))
 
                 Text(title)
-                    .font(.system(size: 10))
+                    .font(.system(size: 10, weight: .medium))
             }
-            .foregroundStyle(gold)
+            .foregroundStyle(silver)
             .frame(maxWidth: .infinity)
-            .padding(13)
-            .background(Color.white.opacity(0.045))
-            .clipShape(RoundedRectangle(cornerRadius: 9))
+            .padding(14)
+            .background(secondaryPanel)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
         }
     }
 
-    // MARK: - Import
+    // MARK: - Camera Roll Import
+
+    @MainActor
+    private func importFromPhotos(
+        _ items: [PhotosPickerItem]
+    ) async {
+        for item in items {
+            do {
+                guard let movie = try await item.loadTransferable(
+                    type: ImportedMovie.self
+                ) else {
+                    showError("Could not load one of your Camera Roll videos.")
+                    continue
+                }
+
+                await importVideos([movie.url])
+
+            } catch {
+                showError(
+                    "Camera Roll import failed: \(error.localizedDescription)"
+                )
+            }
+        }
+    }
+
+    // MARK: - Files and Video Import
 
     @MainActor
     private func importVideos(_ urls: [URL]) async {
@@ -476,16 +730,21 @@ struct ContentView: View {
                 let folder = FileManager.default.urls(
                     for: .documentDirectory,
                     in: .userDomainMask
-                )[0].appendingPathComponent("AVIStudioMedia")
+                )[0]
+                .appendingPathComponent("AVIStudioMedia")
 
                 try FileManager.default.createDirectory(
                     at: folder,
                     withIntermediateDirectories: true
                 )
 
+                let ext = url.pathExtension.isEmpty
+                    ? "mov"
+                    : url.pathExtension
+
                 let destination = folder
                     .appendingPathComponent(UUID().uuidString)
-                    .appendingPathExtension(url.pathExtension)
+                    .appendingPathExtension(ext)
 
                 try FileManager.default.copyItem(
                     at: url,
@@ -493,6 +752,7 @@ struct ContentView: View {
                 )
 
                 let asset = AVURLAsset(url: destination)
+
                 let duration = try await asset.load(.duration)
                 let seconds = CMTimeGetSeconds(duration)
 
@@ -503,13 +763,8 @@ struct ContentView: View {
                 guard !videoTracks.isEmpty,
                       seconds.isFinite,
                       seconds > 0 else {
-                    throw NSError(
-                        domain: "AVIStudio",
-                        code: 1,
-                        userInfo: [
-                            NSLocalizedDescriptionKey:
-                                "This file does not contain a usable video."
-                        ]
+                    throw exportError(
+                        "This file does not contain a usable video."
                     )
                 }
 
@@ -528,7 +783,9 @@ struct ContentView: View {
                 }
 
             } catch {
-                showError("Could not import \(url.lastPathComponent): \(error.localizedDescription)")
+                showError(
+                    "Could not import \(url.lastPathComponent): \(error.localizedDescription)"
+                )
             }
         }
     }
@@ -551,21 +808,29 @@ struct ContentView: View {
         newPlayer.pause()
     }
 
+    // MARK: - Update Clip
+
     private func updateSelectedClip(
         _ update: (inout EditorClip) -> Void
     ) {
-        guard let index = selectedIndex else { return }
+        guard let index = selectedIndex else {
+            return
+        }
 
         update(&clips[index])
     }
 
-    // MARK: - Split
+    // MARK: - Split Clip
 
     private func splitSelectedClip() {
-        guard let index = selectedIndex else { return }
+        guard let index = selectedIndex else {
+            return
+        }
 
         let clip = clips[index]
-        let midpoint = (clip.sourceStart + clip.sourceEnd) / 2
+        let midpoint = (
+            clip.sourceStart + clip.sourceEnd
+        ) / 2
 
         guard midpoint - clip.sourceStart > 0.1,
               clip.sourceEnd - midpoint > 0.1 else {
@@ -574,24 +839,32 @@ struct ContentView: View {
         }
 
         var first = clip
+        first.id = UUID()
         first.sourceEnd = midpoint
 
         var second = clip
+        second.id = UUID()
         second.sourceStart = midpoint
 
         clips.remove(at: index)
-        clips.insert(contentsOf: [first, second], at: index)
 
-        selectedClipID = first.id
+        clips.insert(
+            contentsOf: [first, second],
+            at: index
+        )
+
         selectClip(first)
     }
 
-    // MARK: - Delete
+    // MARK: - Delete Clip
 
     private func deleteSelectedClip() {
-        guard let index = selectedIndex else { return }
+        guard let index = selectedIndex else {
+            return
+        }
 
         clips.remove(at: index)
+
         player = nil
         selectedClipID = nil
 
@@ -600,23 +873,29 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Reorder
+    // MARK: - Reorder Clips
 
     private func moveSelectedClip(by offset: Int) {
-        guard let index = selectedIndex else { return }
+        guard let index = selectedIndex else {
+            return
+        }
 
         let newIndex = index + offset
 
-        guard clips.indices.contains(newIndex) else { return }
+        guard clips.indices.contains(newIndex) else {
+            return
+        }
 
         clips.swapAt(index, newIndex)
     }
 
-    // MARK: - Export
+    // MARK: - Export Project
 
     @MainActor
     private func exportProject() async {
-        guard !clips.isEmpty else { return }
+        guard !clips.isEmpty else {
+            return
+        }
 
         isExporting = true
         exportedURL = nil
@@ -687,7 +966,10 @@ struct ContentView: View {
                     )
                 }
 
-                cursor = CMTimeAdd(cursor, range.duration)
+                cursor = CMTimeAdd(
+                    cursor,
+                    range.duration
+                )
             }
 
             guard CMTimeGetSeconds(cursor) > 0 else {
@@ -702,7 +984,9 @@ struct ContentView: View {
             }
 
             let output = FileManager.default.temporaryDirectory
-                .appendingPathComponent("AVI-STUDIO-\(UUID().uuidString).mp4")
+                .appendingPathComponent(
+                    "AVI-STUDIO-\(UUID().uuidString).mp4"
+                )
 
             session.outputURL = output
             session.outputFileType = .mp4
@@ -734,23 +1018,32 @@ struct ContentView: View {
             }
 
             exportedURL = output
+
             showError("Your video has been exported successfully.")
 
         } catch {
-            showError("Export failed: \(error.localizedDescription)")
+            showError(
+                "Export failed: \(error.localizedDescription)"
+            )
         }
     }
 
     // MARK: - Helpers
 
     private func timeString(_ seconds: Double) -> String {
-        guard seconds.isFinite else { return "00:00" }
+        guard seconds.isFinite else {
+            return "00:00"
+        }
 
         let total = max(0, Int(seconds))
         let minutes = total / 60
         let remaining = total % 60
 
-        return String(format: "%02d:%02d", minutes, remaining)
+        return String(
+            format: "%02d:%02d",
+            minutes,
+            remaining
+        )
     }
 
     private func showError(_ message: String) {
@@ -760,7 +1053,7 @@ struct ContentView: View {
 
     private func exportError(_ message: String) -> NSError {
         NSError(
-            domain: "AVIStudioExport",
+            domain: "AVIStudio",
             code: 1,
             userInfo: [
                 NSLocalizedDescriptionKey: message

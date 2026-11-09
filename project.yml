@@ -1,3 +1,4 @@
+
 name: AVIStudio
 
 options:
@@ -14,7 +15,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.avistudio.editor
-        PRODUCT_NAME: AVI STUDIO
+        PRODUCT_NAME: AVIStudio
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: AVI STUDIO
         INFOPLIST_KEY_UIUserInterfaceStyle: Dark

@@ -1,27 +1,52 @@
+
 name: AVI STUDIO iOS Build
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: avi-studio-ios-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-ios:
-    name: Build iOS IPA
-    runs-on: macos-15
+    name: Build AVI STUDIO IPA
+    runs-on: macos-latest
+    timeout-minutes: 45
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Show build environment
+        run: |
+          echo "macOS version:"
+          sw_vers
+          echo "Xcode version:"
+          xcodebuild -version
+
       - name: Install XcodeGen
-        run: brew install xcodegen
+        run: |
+          brew install xcodegen
+          xcodegen --version
+
+      - name: Verify project files
+        run: |
+          test -f project.yml
+          test -d Sources
+          echo "Project files found."
 
       - name: Generate Xcode project
-        run: xcodegen generate
+        run: |
+          xcodegen generate
+          test -d AVIStudio.xcodeproj
+          echo "Xcode project generated."
 
       - name: Build iOS app
         run: |
@@ -34,11 +59,21 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
+      - name: Verify compiled app
+        run: |
+          test -d build/Build/Products/Release-iphoneos/AVIStudio.app
+          echo "App successfully compiled."
+
       - name: Package unsigned IPA
         run: |
-          mkdir Payload
+          mkdir -p Payload
           cp -R build/Build/Products/Release-iphoneos/AVIStudio.app Payload/
           zip -r AVI-STUDIO-unsigned.ipa Payload
+
+      - name: Verify IPA
+        run: |
+          test -f AVI-STUDIO-unsigned.ipa
+          ls -lh AVI-STUDIO-unsigned.ipa
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
